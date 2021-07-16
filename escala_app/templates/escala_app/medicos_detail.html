@@ -1,0 +1,63 @@
+{% extends 'escala_app/base.html'%}
+
+{%block body_block%}
+    <br><br>
+    <div class="container-responsive jumbotron">
+        <h2><span class="badge badge-light">Detalhes dos médicos:</span></h2>
+        <div style='padding: 2%;'>
+            
+            <p><b>Nome: </b>{{medicos_detail.nome}} {{medicos_detail.sobrenome}}</p>
+            <p><b>Data de Admissão: </b>{{medicos_detail.data_admissao}}</p>
+            
+            <p><b>{%if medicos_detail.status == True%}<span class="badge badge-success">Ativo</span>{%else%}<span class="badge badge-danger">Inativo</span>{%endif%}</b></p>
+            
+            <p><a class='btn btn-warning' href="{% url 'escala_app:update' pk=medicos_detail.pk %}">Atualizar ou desativar médico</a></p>
+
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                  <th>
+                    <h2><span class="badge badge-light">Dias de folga:</span></h2>
+                </th>
+                </tr>
+            </thead>
+            {% for folga in medicos_detail.dia_de_folga.all %}
+                <tr>
+                    <td>{{folga.dia_folga}}</td>
+                    <td>
+                        <p><a class='btn btn-warning' href="{% url 'escala_app:folgaupdate' pk=folga.pk %}">Atualizar</a></p>
+                    </td>
+                    <td>
+                        <p><a class='btn btn-danger' href="{% url 'escala_app:delete' pk=folga.pk %}">Deletar</a></p>
+                    </td>
+                </tr>
+            {% endfor %}
+
+        </table>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                      <th>
+                        <h2><span class="badge badge-light">Escala:</span></h2>
+                    </th>
+                    </tr>
+                </thead>
+                {% for escala in medicos_detail.escala_medico.all %}
+                    <tr>
+                        <td>{{escala.posto}}</td>
+                        <td>{{escala.medico}}</td>
+                        <td>{{escala.data}}</td>
+                        <td>
+                            <p><a class='btn btn-warning container' href="{% url 'escala_app:escalaupdate' pk=escala.pk %}">Atualizar</a></p>
+                            <p><a class='btn btn-danger container' href="{% url 'escala_app:escaladelete' pk=escala.pk %}">Deletar</a></p>
+                        
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        
+    </div>
+{%endblock%}

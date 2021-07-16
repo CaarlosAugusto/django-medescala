@@ -1,0 +1,18 @@
+{% extends 'escala_app/base.html'%}
+
+{%block body_block%}
+    <br><br>
+    <div class="container-responsive jumbotron">
+        <h2><span class="badge badge-light">Detalhes dos postos:</span></h2>
+        <div style='padding: 2%;'>
+            <p><b>Nome do posto:</b> {{postos_detail.nome}}</p>
+            <p><b>Endereço: </b>{{postos_detail.endereco}}</p>
+            
+            <p><b>{%if postos_detail.status == True%}<span class="badge badge-success">Ativo</span>{%else%}<span class="badge badge-danger">Inativo</span>{%endif%}</b></p>
+
+        </div>
+        <div class="container">
+            <p><a class='btn btn-warning' href="{% url 'escala_app:postosupdate' pk=postos_detail.pk %}">Atualizar ou desativar posto</a></p>
+        </div>
+    </div>
+{%endblock%}

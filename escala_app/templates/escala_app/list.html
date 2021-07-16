@@ -1,0 +1,38 @@
+{% extends 'escala_app/base.html'%}
+
+{% block body_block%}
+<br><br>
+    <div class="jumbotron">
+        <h1>Lista de {{name}}</h1>
+        <ul>
+            {% for item in item_list %}
+                {%if "dias de folga" in name%}
+                <p><li><b>{{item.medico}}<br>Dia: </b><a href="{% url 'escala_app:detail' pk=item.medico.id%}">{{item.dia_folga}}</a></li></p>
+                {%elif "Escala" in name%}
+                {%else%}
+                <p><li><a href="{{ item.id }}/"><b>{{item.nome}} {{item.sobrenome}}</b></a></li></p>
+                {%endif%}
+            {% endfor %}
+        </ul>
+        <table class="table">
+            {%if "Escala" in name%}
+                <thead>
+                    <th>Data</th>
+                    <th>Médico</th>
+                    <th>Posto</th>
+                    <th>Ação</th>
+                </thead>
+                {%for item in item_list%}
+                    <tr>
+                        <td>{{item.data}}</td>
+                        <td>{{item.medico}}</td>
+                        <td>{{item.posto}}</td>
+                        <td><a href="{% url 'escala_app:detail' pk=item.medico.pk%}">Detalhes</a></td>
+                    </tr>
+                {%endfor%}
+            {%endif%}
+        </table>
+
+    </div>
+
+{%endblock%}

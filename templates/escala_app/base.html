@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="pt-Br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>Home</title>
+</head>
+<body>
+    <nav class="navbar navbar-expand-sm bg-info navbar-dark">
+        <a class='navbar-brand' href="{% url 'index' %}">MedEscala</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#myNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="myNav">
+            <ul class='navbar-nav'>
+                <li class='nav-item dropdown'>
+                    <button type="button" class="btn btn-info dropdown-toggle container" data-toggle="dropdown">
+                        Gerenciar Médicos
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="{% url 'escala_app:medicosregister' %}">Cadastrar Médicos</a>
+                        <a class="dropdown-item" href="{% url 'escala_app:medicoslist' %}">Listar Médicos</a>
+                    </div>
+                </li>
+                <li class='nav-item dropdown'>
+                    <button type="button" class="btn btn-info dropdown-toggle container" data-toggle="dropdown">
+                        Gerenciar Postos
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="{% url 'escala_app:postosregister' %}">Cadastrar Postos</a>
+                        <a class="dropdown-item" href="{% url 'escala_app:postoslist' %}">Listar Postos</a>
+                    </div>
+                </li>
+                <li class='nav-item dropdown'>
+                    <button type="button" class="btn btn-info dropdown-toggle container" data-toggle="dropdown">
+                        Gerenciar Dias de folga
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="{% url 'escala_app:folgaregister' %}">Cadastrar dia de folga</a>
+                        <a class="dropdown-item" href="{% url 'escala_app:folgalist' %}">Listar dias de folga</a>
+                    </div>
+                </li>
+                <li class='nav-item dropdown'>
+                    <button type="button" class="btn btn-info dropdown-toggle container" data-toggle="dropdown">
+                        Gerenciar Escala
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="{% url 'escala_app:escalaregister' %}">Cadastrar escala</a>
+                        <a class="dropdown-item" href="{% url 'escala_app:escalalist' %}">Listar escalas</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container">
+        <div class='row'>
+            <div class="col-sm"></div>
+            <div class='col-sm-9'>
+                {% block body_block %}
+                <!-- Tudo dentro desse bloco vai ser adicionado de outros arquivos html -->
+                {% endblock %}
+            </div>
+            <div class="col-sm"></div>
+        </div>
+    </div>
+
+    <footer>
+        <br><br>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
+
+</body>
+</html>
