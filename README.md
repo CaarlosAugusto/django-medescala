@@ -7,6 +7,9 @@ System monitoring to doctors
 
 ## How to run:
 ```
+source venv/bin/activate
+```
+```
 $ pip install -r requirements.txt
 ```
 ```

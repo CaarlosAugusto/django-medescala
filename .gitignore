@@ -1,1 +1,85 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+# Usually these files are written by a Python script from a template
+# before PyInstaller builds the exe, so as to inject date/other infos.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+coverage/
+*.cover
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+staticfiles/
+local_settings.py
+
+# Ignore the environment file
 .env
+
+# Ignore virtual environment folder
+venv/
+env/
+ENV/
+.venv/
+
+# VS Code settings
+.vscode/
+
+# PyCharm
+.idea/
+
+# SQL database files
+*.sqlite3
+
+# Ignore node modules if using front-end dependencies
+node_modules/
+
+# Ignore compiled files
+*.pyo
+*.pyd
+
+# Ignore MacOS system files
+.DS_Store
