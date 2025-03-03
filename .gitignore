@@ -5,6 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
+medescale-10362-firebase-adminsdk-fbsvc-a4c921c1fb.json
 
 # Distribution / packaging
 .Python
@@ -64,6 +65,8 @@ venv/
 env/
 ENV/
 .venv/
+
+*.pgerd
 
 # VS Code settings
 .vscode/

@@ -1,50 +1,121 @@
 from django.db import models
-from django.urls import reverse
-from django.db.models import fields
-from django.db.models.base import Model
-from django.forms import ModelForm, widgets
+from django.contrib.auth.models import AbstractUser, Group, Permission
 
-# Create your models here.
-class Medicos(models.Model):
-    nome = models.CharField(verbose_name="Primeiro nome", max_length=100)
-    sobrenome = models.CharField(max_length=100)
-    data_admissao = models.DateField(verbose_name="Data de admissão (DD/MM/AAAA)")
-    status = models.BooleanField(default=True, verbose_name='Status(para desativar o médico desmarque esta opção):')
+class User(AbstractUser):
+    TIPO_USUARIO = [
+        ('medico', 'Médico'),
+        ('paciente', 'Paciente'),
+    ]
+    
+    email = models.EmailField(unique=True)
+    username = None
+    tipo = models.CharField(max_length=10, choices=TIPO_USUARIO)
+    telefone = models.CharField(max_length=20, blank=True, null=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'tipo']
+
+    groups = models.ManyToManyField(Group, related_name="escala_app_users")
+    user_permissions = models.ManyToManyField(Permission, related_name="escala_app_users_permissions")
+
+    def is_medico(self):
+        return self.tipo == 'medico'
+
+    def is_paciente(self):
+        return self.tipo == 'paciente'
+
+# Modelo para Médicos
+class Medico(models.Model):
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name="medico")
+    crm = models.CharField(max_length=20, unique=True)
+    especialidade = models.CharField(max_length=100)
+    data_admissao = models.DateField()
+    status = models.BooleanField(default=True)
 
     def __str__(self):
-        return "{} {}".format(self.nome, self.sobrenome)
-    
-    def get_absolute_url(self):
-        return reverse("escala_app:detail",kwargs={'pk':self.pk})
+        return f"{self.usuario.first_name} {self.usuario.last_name} - {self.especialidade}"
 
-class Postos(models.Model):
+
+# Modelo para Pacientes
+class Paciente(models.Model):
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name="paciente")
+    data_nascimento = models.DateField()
+    endereco = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.usuario.first_name} {self.usuario.last_name}"
+
+
+# Modelo de Postos de Atendimento
+class Posto(models.Model):
     nome = models.CharField(max_length=130)
-    endereco = models.CharField(verbose_name="Endereço", max_length=250)
-    status = models.BooleanField(default=True,verbose_name='Status(para desativar o posto desmarque esta opção):')
+    endereco = models.CharField(max_length=250)
+    status = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nome
 
-    def get_absolute_url(self):
-        return reverse("escala_app:postosdetail",kwargs={'pk':self.pk})
 
-class Dia_de_Folga(models.Model):
-    medico = models.ForeignKey(Medicos, related_name='dia_de_folga', limit_choices_to={'status': True}, on_delete=models.PROTECT)
-    dia_folga = models.DateField(verbose_name="Dia de folga (DD/MM/AAAA)")
-
-    def __str__(self):
-        return str(self.dia_folga)
-        
-    def get_absolute_url(self):
-        return reverse("escala_app:detail",kwargs={'pk':self.medico.pk})
-
-class Escala(models.Model):
-    data = models.DateField(verbose_name='Dia (DD/MM/AAAA)')
-    posto = models.ForeignKey(Postos, related_name='escala_posto', limit_choices_to={'status': True}, on_delete=models.PROTECT)
-    medico = models.ForeignKey(Medicos, related_name='escala_medico', limit_choices_to={'status': True}, on_delete=models.PROTECT)
+# Modelo de Horários Disponíveis dos Médicos
+class HorarioDisponivel(models.Model):
+    medico = models.ForeignKey(Medico, related_name='horarios_disponiveis', on_delete=models.CASCADE)
+    dia_semana = models.CharField(max_length=10, choices=[
+        ('segunda', 'Segunda-feira'),
+        ('terca', 'Terça-feira'),
+        ('quarta', 'Quarta-feira'),
+        ('quinta', 'Quinta-feira'),
+        ('sexta', 'Sexta-feira'),
+        ('sabado', 'Sábado'),
+        ('domingo', 'Domingo'),
+    ])
+    hora_inicio = models.TimeField()
+    hora_fim = models.TimeField()
 
     def __str__(self):
-        return str(self.data)
-    
-    def get_absolute_url(self):
-        return reverse("escala_app:detail",kwargs={'pk':self.medico.pk})
+        return f"{self.medico} - {self.dia_semana} ({self.hora_inicio} - {self.hora_fim})"
+
+
+# Modelo para Agendamento de Consultas
+class Agendamento(models.Model):
+    STATUS_AGENDAMENTO = [
+        ('pendente', 'Pendente'),
+        ('confirmado', 'Confirmado'),
+        ('cancelado', 'Cancelado'),
+        ('realizado', 'Realizado'),
+    ]
+
+    medico = models.ForeignKey(Medico, related_name='agendamentos', on_delete=models.CASCADE)
+    paciente = models.ForeignKey(Paciente, related_name='agendamentos', on_delete=models.CASCADE)
+    posto = models.ForeignKey(Posto, related_name='agendamentos', on_delete=models.CASCADE)
+    data = models.DateField()
+    hora = models.TimeField()
+    status = models.CharField(max_length=10, choices=STATUS_AGENDAMENTO, default='pendente')
+
+    def __str__(self):
+        return f"Consulta {self.paciente} com {self.medico} em {self.data} às {self.hora}"
+
+
+# Modelo para Pagamentos e Assinaturas
+class Assinatura(models.Model):
+    medico = models.OneToOneField(Medico, on_delete=models.CASCADE, related_name='assinatura')
+    plano = models.CharField(max_length=20, choices=[
+        ('mensal', '$20/mês'),
+        ('trimestral', '$50/trimestre'),
+        ('anual', '$150/ano'),
+    ])
+    data_inicio = models.DateField(auto_now_add=True)
+    data_expiracao = models.DateField()
+    status = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Plano {self.plano} - {self.medico}"
+
+
+# Modelo para Integrações (Google Calendar, WhatsApp)
+class Integracao(models.Model):
+    medico = models.OneToOneField(Medico, on_delete=models.CASCADE, related_name='integracoes')
+    google_calendar_token = models.CharField(max_length=255, blank=True, null=True)
+    whatsapp_api_token = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"Integrações de {self.medico}"

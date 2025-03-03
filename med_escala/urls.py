@@ -19,6 +19,7 @@ from escala_app import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index, name='index'),
-    path('escala_app/', include('escala_app.urls')),
+    # path('', views.index, name='index'),
+    # path('escala_app/', include('escala_app.urls')),
+    path("api/", include("escala_app.urls")),
 ]
