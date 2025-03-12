@@ -3,6 +3,8 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 import firebase_admin.auth as firebase_auth
+from .models import HorarioDisponivel, Medico
+from .serializers import HorarioDisponivelSerializer
 
 User = get_user_model()
 
@@ -42,7 +44,45 @@ class FirebaseLoginView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+class HorarioDisponivelView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
+    def post(self, request):
+        if not request.user.is_medico():
+            return Response({'error': 'Somente médicos podem definir horários disponíveis'}, status=status.HTTP_403_FORBIDDEN)
+        
+        medico = Medico.objects.get(usuario=request.user)
+        data = request.data.copy()
+        data['medico'] = medico.id
+        
+        serializer = HorarioDisponivelSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(medico=medico) 
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        if not request.user.is_medico():
+            return Response({'error': 'Somente médicos podem visualizar horários'}, status=status.HTTP_403_FORBIDDEN)
+        
+        medico = Medico.objects.get(usuario=request.user)
+        horarios = HorarioDisponivel.objects.filter(medico=medico)
+        serializer = HorarioDisponivelSerializer(horarios, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        if not request.user.is_medico():
+            return Response({'error': 'Somente médicos podem excluir horários'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            horario = HorarioDisponivel.objects.get(id=pk, medico__usuario=request.user)
+            horario.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except HorarioDisponivel.DoesNotExist:
+            return Response({'error': 'Horário não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        
+        
 # from django.http import request
 # from django.shortcuts import render
 # from django.urls import reverse_lazy

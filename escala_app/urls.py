@@ -1,11 +1,13 @@
 from django.urls import path
-from .views import FirebaseLoginView
+from .views import *
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
     path("auth/login/", FirebaseLoginView.as_view(), name="firebase-login"),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
+    path('horarios/', HorarioDisponivelView.as_view(), name='definir-horarios'),
+    path('horarios/<int:pk>/', HorarioDisponivelView.as_view(), name='excluir-horario'),
 ]
 
 
