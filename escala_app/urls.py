@@ -8,6 +8,8 @@ urlpatterns = [
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
     path('horarios/', HorarioDisponivelView.as_view(), name='definir-horarios'),
     path('horarios/<int:pk>/', HorarioDisponivelView.as_view(), name='excluir-horario'),
+    path('user/', UserView.as_view(), name='user-info'),
+    path('medico/', MedicoCreateView.as_view(), name='create-medico'),
 ]
 
 

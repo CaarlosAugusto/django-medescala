@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 import firebase_admin.auth as firebase_auth
 from .models import HorarioDisponivel, Medico
-from .serializers import HorarioDisponivelSerializer
+from .serializers import *
 
 User = get_user_model()
 
@@ -29,14 +29,19 @@ class FirebaseLoginView(APIView):
 
             user, created = User.objects.get_or_create(
                 email=email,
-                defaults={"first_name": nome, "last_name": sobrenome}
+                defaults={"first_name": nome, "last_name": sobrenome, "tipo": 'medico',}
             )
+
+            medico = Medico.objects.filter(usuario=user).first()
+            primeiro_login = False if medico else True
 
             return Response({
                 "message": "Usuário autenticado",
                 "created": created,
                 "user_id": user.id,
-                "email": user.email
+                "email": user.email,
+                "tipo": user.tipo,
+                "primeiro_login": primeiro_login
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -44,45 +49,123 @@ class FirebaseLoginView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+class MedicoCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        try:
+            if Medico.objects.filter(usuario=user).exists():
+                return Response({"error": "Médico já cadastrado"}, status=status.HTTP_400_BAD_REQUEST)
+
+            data = request.data.copy()
+            data['usuario'] = user.id
+
+            serializer = MedicoSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class HorarioDisponivelView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        if not request.user.is_medico():
-            return Response({'error': 'Somente médicos podem definir horários disponíveis'}, status=status.HTTP_403_FORBIDDEN)
+        user = request.user
         
-        medico = Medico.objects.get(usuario=request.user)
-        data = request.data.copy()
-        data['medico'] = medico.id
-        
-        serializer = HorarioDisponivelSerializer(data=data)
+        # Verifica se o usuário é médico
+        if not user.is_medico():
+            return Response({"error": "Somente médicos podem definir horários disponíveis"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            medico = Medico.objects.get(usuario=user)
+        except Medico.DoesNotExist:
+            return Response({"error": "Médico não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Verifica se os dados estão em formato de lista
+        if isinstance(request.data, list):
+            for horario in request.data:
+                horario['medico'] = medico.id
+
+            serializer = HorarioDisponivelSerializer(data=request.data, many=True)
+        else:
+            request.data['medico'] = medico.id
+            serializer = HorarioDisponivelSerializer(data=request.data)
+
         if serializer.is_valid():
-            serializer.save(medico=medico) 
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
-        if not request.user.is_medico():
-            return Response({'error': 'Somente médicos podem visualizar horários'}, status=status.HTTP_403_FORBIDDEN)
+        user = request.user
         
-        medico = Medico.objects.get(usuario=request.user)
+        if not user.is_medico():
+            return Response({"error": "Somente médicos podem visualizar horários disponíveis"}, status=status.HTTP_403_FORBIDDEN)
+
+        medico = Medico.objects.get(usuario=user)
         horarios = HorarioDisponivel.objects.filter(medico=medico)
         serializer = HorarioDisponivelSerializer(horarios, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, pk):
-        if not request.user.is_medico():
+        user = request.user
+
+        if not user.is_medico():
             return Response({'error': 'Somente médicos podem excluir horários'}, status=status.HTTP_403_FORBIDDEN)
-        
+
         try:
-            horario = HorarioDisponivel.objects.get(id=pk, medico__usuario=request.user)
+            horario = HorarioDisponivel.objects.get(id=pk, medico__usuario=user)
             horario.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except HorarioDisponivel.DoesNotExist:
-            return Response({'error': 'Horário não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Horário não encontrado'}, status=status.HTTP_404_NOT_FOUND)     
         
+class UserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        auth_header = request.headers.get('Authorization')
         
+        if not auth_header:
+            return Response({"error": "Token não fornecido"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            # Captura e valida o token
+            token = auth_header.split(' ')[1]
+            decoded_token = firebase_auth.verify_id_token(token)
+
+            email = decoded_token.get('email')
+            if not email:
+                return Response({"error": "Email não encontrado no token"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user = User.objects.get(email=email)
+            print(user)
+
+            # Se o usuário for médico, retorna os dados de médico
+            # if user.is_medico():
+            #     medico = Medico.objects.get(usuario=user)
+            #     serializer = MedicoSerializer(medico)
+            #     return Response(serializer.data, status=status.HTTP_200_OK)
+
+            # # Se o usuário for paciente, retorna os dados de paciente
+            # elif user.is_paciente():
+            #     paciente = Paciente.objects.get(usuario=user)
+            #     serializer = PacienteSerializer(paciente)
+            #     return Response(serializer.data, status=status.HTTP_200_OK)
+
+            # # Se o usuário não for médico nem paciente, retorna os dados básicos
+            # else:
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": f"Erro na autenticação: {str(e)}"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+
 # from django.http import request
 # from django.shortcuts import render
 # from django.urls import reverse_lazy
