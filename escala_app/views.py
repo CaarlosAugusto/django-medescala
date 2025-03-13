@@ -74,8 +74,7 @@ class HorarioDisponivelView(APIView):
 
     def post(self, request):
         user = request.user
-        
-        # Verifica se o usuário é médico
+
         if not user.is_medico():
             return Response({"error": "Somente médicos podem definir horários disponíveis"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -84,15 +83,18 @@ class HorarioDisponivelView(APIView):
         except Medico.DoesNotExist:
             return Response({"error": "Médico não encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Verifica se os dados estão em formato de lista
-        if isinstance(request.data, list):
-            for horario in request.data:
+        # Cria uma cópia mutável do request.data
+        data = request.data.copy()
+
+        # Se os dados forem uma lista, define o médico para cada item
+        if isinstance(data, list):
+            for horario in data:
                 horario['medico'] = medico.id
 
-            serializer = HorarioDisponivelSerializer(data=request.data, many=True)
+            serializer = HorarioDisponivelSerializer(data=data, many=True)
         else:
-            request.data['medico'] = medico.id
-            serializer = HorarioDisponivelSerializer(data=request.data)
+            data['medico'] = medico.id
+            serializer = HorarioDisponivelSerializer(data=data)
 
         if serializer.is_valid():
             serializer.save()
