@@ -89,14 +89,14 @@ class HorarioDisponivelView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # ✅ Cria uma cópia mutável do request.data
         data = request.data.copy()
+        conflitos = []
 
         if isinstance(data, list):
             for horario in data:
                 horario['medico'] = medico.id
 
-                # ✅ Verifica conflito de horário
+                # ✅ Verifica conflito para cada item da lista
                 horario_existente = HorarioDisponivel.objects.filter(
                     medico=medico,
                     dia_semana=horario['dia_semana']
@@ -107,20 +107,26 @@ class HorarioDisponivelView(APIView):
                 ).first()
 
                 if horario_existente:
-                    return Response(
-                        {
-                            "error": "Conflito com horário existente.",
-                            "horario_existente_id": horario_existente.id
-                        },
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    conflitos.append({
+                        "dia_semana": horario['dia_semana'],
+                        "hora_inicio": horario['hora_inicio'],
+                        "hora_fim": horario['hora_fim'],
+                        "horario_existente_id": horario_existente.id
+                    })
 
-            # ✅ Cria os horários após verificação
+            # ✅ Retorna lista de conflitos
+            if conflitos:
+                return Response(
+                    {"conflitos": conflitos},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # ✅ Cria todos os horários após a verificação
             serializer = HorarioDisponivelSerializer(data=data, many=True)
+
         else:
             data['medico'] = medico.id
 
-            # ✅ Verifica conflito de horário para horário individual
             horario_existente = HorarioDisponivel.objects.filter(
                 medico=medico,
                 dia_semana=data['dia_semana']
@@ -146,6 +152,7 @@ class HorarioDisponivelView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
     def get(self, request):
         user = request.user
