@@ -76,24 +76,69 @@ class HorarioDisponivelView(APIView):
         user = request.user
 
         if not user.is_medico():
-            return Response({"error": "Somente médicos podem definir horários disponíveis"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Somente médicos podem definir horários disponíveis"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         try:
             medico = Medico.objects.get(usuario=user)
         except Medico.DoesNotExist:
-            return Response({"error": "Médico não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Médico não encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        # Cria uma cópia mutável do request.data
+        # ✅ Cria uma cópia mutável do request.data
         data = request.data.copy()
 
-        # Se os dados forem uma lista, define o médico para cada item
         if isinstance(data, list):
             for horario in data:
                 horario['medico'] = medico.id
 
+                # ✅ Verifica conflito de horário
+                horario_existente = HorarioDisponivel.objects.filter(
+                    medico=medico,
+                    dia_semana=horario['dia_semana']
+                ).exclude(
+                    hora_inicio__gte=horario['hora_fim']
+                ).exclude(
+                    hora_fim__lte=horario['hora_inicio']
+                ).first()
+
+                if horario_existente:
+                    return Response(
+                        {
+                            "error": "Conflito com horário existente.",
+                            "horario_existente_id": horario_existente.id
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            # ✅ Cria os horários após verificação
             serializer = HorarioDisponivelSerializer(data=data, many=True)
         else:
             data['medico'] = medico.id
+
+            # ✅ Verifica conflito de horário para horário individual
+            horario_existente = HorarioDisponivel.objects.filter(
+                medico=medico,
+                dia_semana=data['dia_semana']
+            ).exclude(
+                hora_inicio__gte=data['hora_fim']
+            ).exclude(
+                hora_fim__lte=data['hora_inicio']
+            ).first()
+
+            if horario_existente:
+                return Response(
+                    {
+                        "error": "Conflito com horário existente.",
+                        "horario_existente_id": horario_existente.id
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             serializer = HorarioDisponivelSerializer(data=data)
 
         if serializer.is_valid():

@@ -101,3 +101,42 @@ class HorarioDisponivelTests(TestCase):
         response = self.client.post('/api/horarios/', data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_substituir_horario_existente(self):
+        """Testa substituição de horário existente por médico"""
+        
+        horario_existente = HorarioDisponivel.objects.create(
+            medico=self.medico,
+            dia_semana='segunda',
+            hora_inicio='08:00',
+            hora_fim='12:00'
+        )
+
+        data = {
+            'dia_semana': 'segunda',
+            'hora_inicio': '10:00',
+            'hora_fim': '14:00'
+        }
+        
+        response = self.client.post('/api/horarios/', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', response.data)
+        self.assertIn('horario_existente_id', response.data)
+
+        horario_existente_id = response.data['horario_existente_id']
+
+        # Substitui o horário existente → Exclui o antigo e cria o novo
+        response = self.client.delete(f'/api/horarios/{horario_existente_id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Agora cria o novo horário após deletar o antigo
+        response = self.client.post('/api/horarios/', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Verifica que o novo horário foi criado corretamente
+        self.assertEqual(HorarioDisponivel.objects.count(), 1)
+        horario = HorarioDisponivel.objects.first()
+        self.assertEqual(horario.dia_semana, 'segunda')
+        self.assertEqual(horario.hora_inicio.strftime('%H:%M'), '10:00')
+        self.assertEqual(horario.hora_fim.strftime('%H:%M'), '14:00')
+
+
